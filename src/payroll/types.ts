@@ -4,10 +4,24 @@ export type PayrollStatus = "calculated" | "validated" | "disbursed" | "failed";
 
 export interface Employee {
   id: string;
+  name: string;
   walletAddress: string;
   baseSalaryCents: Cents;
   department: string;
   taxBasisPoints: BasisPoints;
+}
+
+/**
+ * On-disk DTO: all monetary fields stored as decimal strings.
+ * Never store raw BigInt — JSON.stringify cannot serialize it.
+ */
+export interface EmployeeDTO {
+  id: string;
+  name: string;
+  walletAddress: string;
+  baseSalaryCents: string;
+  department: string;
+  taxBasisPoints: number;
 }
 
 export interface EmployeeInput {
@@ -33,11 +47,38 @@ export interface PayrollBatch {
   batchId: string;
   processedAt: string;
   tenantDid: string;
+  cycleId: string;
+  payPeriodStart: string;
+  payPeriodEnd: string;
   totalEmployees: number;
   totalGrossCents: Cents;
   totalTaxCents: Cents;
   totalNetCents: Cents;
   results: PayrollResult[];
+}
+
+/**
+ * On-disk DTO for batches: all bigint fields stored as decimal strings.
+ */
+export interface PayrollBatchDTO {
+  batchId: string;
+  processedAt: string;
+  tenantDid: string;
+  cycleId: string;
+  payPeriodStart: string;
+  payPeriodEnd: string;
+  totalEmployees: number;
+  totalGrossCents: string;
+  totalTaxCents: string;
+  totalNetCents: string;
+  results: Array<{
+    employeeId: string;
+    grossPayCents: string;
+    taxWithheldCents: string;
+    netPayCents: string;
+    payDate: string;
+    status: PayrollStatus;
+  }>;
 }
 
 /**

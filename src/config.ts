@@ -20,6 +20,7 @@ export function parseEnvironment(raw: string | undefined): TenantSdkEnvironment 
 export interface AppConfig {
   environment: TenantSdkEnvironment;
   apiKey: string;
+  agentKey?: string | undefined;
 }
 
 export function loadConfig(): AppConfig {
@@ -27,8 +28,24 @@ export function loadConfig(): AppConfig {
   if (!apiKey) {
     throw new Error("T3N_API_KEY environment variable is required");
   }
-  return {
+
+  const agentKey = process.env["AGENT_KEY"];
+
+  // Reject startup if T3N_API_KEY === AGENT_KEY
+  // An agent must have a separate key and DID from the tenant
+  if (agentKey && agentKey === apiKey) {
+    throw new Error(
+      "AGENT_KEY must be different from T3N_API_KEY. " +
+      "An agent must have a separate key and DID from the tenant.",
+    );
+  }
+
+  const config: AppConfig = {
     environment: parseEnvironment(process.env["CLUSTER"]),
     apiKey,
   };
+  if (agentKey) {
+    config.agentKey = agentKey;
+  }
+  return config;
 }
