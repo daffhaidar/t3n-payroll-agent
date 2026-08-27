@@ -1,11 +1,11 @@
 //! z-payroll v0.1.0 — Enterprise payroll TEE contract.
 //!
-//! Computes payroll inside the TEE enclave. Reads employee records from a
-//! private KV map, applies tax calculations with checked arithmetic, and
-//! writes audit records to a separate KV map.
+//! Computes payroll inside the TEE enclave. For the MVP, employee records
+//! are passed in the contract input. In production, they would be read from
+//! a private KV map.
 //!
 //! # Host-capability requirements
-//! - kv_store: read employees, write audit records
+//! - kv_store: read employees (production), write audit records
 //! - logging: debug/info/error lines
 //! - tenant_context: tenant DID, cluster timestamp
 //!
@@ -21,7 +21,6 @@ pub const CONTRACT_VERSION: &str = "0.1.0";
 
 mod audit;
 mod payroll;
-
 
 wit_bindgen::generate!({
     world: "payroll",
@@ -42,12 +41,9 @@ impl exports::z::payroll::contracts::Guest for Component {
     ) -> Result<Vec<u8>, String> {
         let input = req.input.ok_or("compute-payroll: missing input")?;
 
-        let request: payroll::PayrollRequest =
-            serde_json::from_slice(&input).map_err(|e| format!("invalid request JSON: {e}"))?;
-
         // In a full implementation, employee records would be read from the
-        // private KV map using host:interfaces/kv-store. For now, the contract
-        // expects employees to be passed in the input for the MVP.
+        // private KV map using host:interfaces/kv-store. For the MVP, the
+        // contract expects employees to be passed in the input.
         //
         // TODO: Read from KV map once tenant creates the employees map:
         //   kv_store::get("employees", &employee_id)
@@ -56,7 +52,6 @@ impl exports::z::payroll::contracts::Guest for Component {
         //   tenant.maps.create({ tail: "employees", visibility: "private", ... })
         //   tenant.maps.entrySet("employees", emp_id, serialized_record)
 
-        // Extract employees from input if provided (MVP path)
         #[derive(serde::Deserialize)]
         struct ExtendedRequest {
             #[serde(flatten)]
@@ -71,7 +66,7 @@ impl exports::z::payroll::contracts::Guest for Component {
             "compute-payroll: employees must be provided (MVP: in input; production: from KV map)",
         )?;
 
-        let result = payroll::compute_payroll(&request, &employees)?;
+        let result = payroll::compute_payroll(&extended.base, &employees)?;
 
         serde_json::to_vec(&result).map_err(|e| format!("serialization error: {e}"))
     }
@@ -118,8 +113,8 @@ impl exports::z::payroll::contracts::Guest for Component {
             return Err("cycle_id is required".into());
         }
 
+        // MVP STUB: returns valid=true if cycle_id is non-empty.
         // In production, this would validate credentials against the KV map.
-        // For the MVP, we return valid=true if cycle_id is non-empty.
         let response = serde_json::json!({ "valid": true });
         serde_json::to_vec(&response).map_err(|e| format!("serialization error: {e}"))
     }
@@ -127,6 +122,7 @@ impl exports::z::payroll::contracts::Guest for Component {
     fn list_audit_cycles(
         _req: exports::z::payroll::contracts::GenericInput,
     ) -> Result<Vec<u8>, String> {
+        // MVP STUB: always returns empty array.
         // In production, this would read from the audit KV map.
         let response = serde_json::json!({ "cycles": [] });
         serde_json::to_vec(&response).map_err(|e| format!("serialization error: {e}"))
@@ -142,11 +138,12 @@ impl exports::z::payroll::contracts::Guest for Component {
             cycle_id: String,
         }
 
-        let _request: GetAuditRequest =
+        let request: GetAuditRequest =
             serde_json::from_slice(&input).map_err(|e| format!("invalid request JSON: {e}"))?;
 
+        // MVP STUB: always returns empty entries.
         // In production, this would read from the audit KV map.
-        let response = serde_json::json!({ "cycle_id": _request.cycle_id, "entries": [] });
+        let response = serde_json::json!({ "cycle_id": request.cycle_id, "entries": [] });
         serde_json::to_vec(&response).map_err(|e| format!("serialization error: {e}"))
     }
 }
