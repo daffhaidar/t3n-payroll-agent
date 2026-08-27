@@ -1,0 +1,61 @@
+/// z-payroll TEE contract — enterprise payroll computation.
+///
+/// Imports required host capabilities:
+/// - tenant-context: tenant DID, cluster timestamp
+/// - logging: debug / info / error lines
+/// - kv-store: reads employee records from private map, writes audit records
+///
+/// This contract does NOT make outbound HTTP calls.
+/// Disbursement is not implemented — it returns an explicit error.
+package z:payroll@0.1.0;
+
+world payroll {
+ import host:tenant/tenant-context@1.0.0;
+ import host:interfaces/logging@2.1.0;
+ import host:interfaces/kv-store@2.1.0;
+
+ export contracts;
+}
+
+interface contracts {
+ /// Standard 3-field envelope used by all contracts callable from the node.
+ /// `input` — JSON-serialized request payload specific to the function.
+ /// `user-profile` — always None for tenant contracts (hardcoded at dispatch).
+ /// `context` — JSON-serialized DynamicContext (node-minted, trusted).
+ record generic-input {
+   input: option<list<u8>>,
+   user-profile: option<list<u8>>,
+   context: option<list<u8>>,
+ }
+
+ /// Compute payroll for a cycle. Reads employee records from the private
+ /// `employees` KV map. Returns per-employee gross, tax, net, and status.
+ /// Input (JSON): { cycle_id, pay_period_start, pay_period_end, batch_cap_cents }
+ /// Output (JSON): { cycle_id, employee_results: [...], batch_totals: {...} }
+ compute-payroll: func(req: generic-input) -> result<list<u8>, string>;
+
+ /// Finalize audit for a completed payroll cycle.
+ /// Writes audit record to the private `audit` KV map.
+ /// Input (JSON): { cycle_id, results: [...] }
+ /// Output (JSON): { cycle_id, finalized: true, audit_entry_count: N }
+ finalize-audit: func(req: generic-input) -> result<list<u8>, string>;
+
+ /// Execute disbursement — NOT IMPLEMENTED.
+ /// Returns explicit error. Must not be simulated as successful.
+ execute-disbursement: func(req: generic-input) -> result<list<u8>, string>;
+
+ /// Validate credentials for a payroll cycle.
+ /// Input (JSON): { cycle_id }
+ /// Output (JSON): { valid: bool }
+ validate-credentials: func(req: generic-input) -> result<list<u8>, string>;
+
+ /// List audit cycles for this tenant.
+ /// Input (JSON): {}
+ /// Output (JSON): { cycles: [...] }
+ list-audit-cycles: func(req: generic-input) -> result<list<u8>, string>;
+
+ /// Get a specific audit entry.
+ /// Input (JSON): { cycle_id }
+ /// Output (JSON): { cycle_id, entries: [...] }
+ get-audit-entry: func(req: generic-input) -> result<list<u8>, string>;
+}
