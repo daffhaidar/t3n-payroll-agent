@@ -1,16 +1,21 @@
 {
   "name": "t3n-payroll-agent",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Enterprise Payroll Agent running inside Terminal 3 TEE",
+  "main": "src/cli.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "payroll": "tsx cli.ts",
-    "start": "tsx cli.ts"
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "build": "tsc --noEmit",
+    "payroll": "tsx src/cli.ts",
+    "start": "tsx src/cli.ts"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "type": "module",
   "dependencies": {
     "@terminal3/t3n-sdk": "^5.2.0",
@@ -19,6 +24,7 @@
     "tsx": "^4.23.12"
   },
   "devDependencies": {
-    "@types/node": "^26.4.0"
+    "@types/node": "^26.4.0",
+    "typescript": "^7.0.2"
   }
 }
