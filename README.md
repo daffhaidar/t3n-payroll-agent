@@ -121,9 +121,23 @@ cargo test        # 24 Rust tests
 cargo clippy      # Zero warnings
 ```
 
+## Verified Testnet Results
+
+| Field | Value |
+|-------|-------|
+| Cluster | testnet |
+| tenantDid | `did:t3n:aba7511767bc3129a5184c8795c363f976d1fdae` |
+| agentDid | `did:t3n:3463e0003357b49c8cbd338d9fc39f96466123af` |
+| Contract | `z:aba7511767bc3129a5184c8795c363f976d1fdae:payroll` |
+| contract_id | 757 |
+| Version | 0.1.0 |
+| WASM SHA-256 | `df7f25eb04e2d16fe93a9e3ab2dd6bb913d2be71e2257e9b20d735876107f2cf` |
+
+**Proofs**: `proofs/phase3-*.json`, `proofs/phase4-*.json`
+
 ## Limitations
 
-- Employee records visible to calling agent (MVP: passed in input, not KV map)
+- Employee records visible to calling agent (MVP)
 - Audit data not persisted (finalize-audit is a stub)
 - Disbursement not implemented
 - No production-grade error recovery
