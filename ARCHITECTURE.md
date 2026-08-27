@@ -2,78 +2,61 @@
 
 ## Overview
 
-The T3N Enterprise Payroll Agent has three layers:
-
-1. **CLI Layer** (`src/cli.ts`) — User-facing command-line interface
-2. **TEE Contract Layer** (`contracts/payroll/`) — Rust/WASM running inside Terminal 3's Trusted Execution Environment
-3. **SDK Integration Layer** (`src/t3n/`) — TypeScript SDK connecting CLI to TEE
-
-## Data Flow
-
-```
-User CLI → TypeScript SDK → T3N Node → TEE Enclave → WASM Contract
-                                         ↓
-                                    KV Map Storage
-                                    (employees, audit)
-```
+The T3N Payroll Agent is a TypeScript + Rust/WASM application that computes payroll inside a Terminal 3 TEE.
 
 ## Components
 
-### CLI (`src/`)
+### TypeScript Layer
 
-| Module | Purpose |
-|--------|---------|
-| `cli.ts` | Command routing, user I/O |
-| `config.ts` | Environment parsing, API key loading |
-| `money.ts` | Exact bigint arithmetic (no floating point) |
-| `validation.ts` | Input validation (wallet, employee ID, cycle ID) |
+- **CLI** (`src/cli.ts`): Commander-based CLI with add/list/remove/process/history/show commands
+- **Storage** (`src/storage/offline.ts`): JSON file storage with BigInt-as-string serialization and atomic writes
+- **Money** (`src/money.ts`): Exact BigInt monetary arithmetic (cents + basis points)
+- **Validation** (`src/validation.ts`): Input validation for wallets, employee IDs, cycle IDs, pay periods, batch caps
+- **Config** (`src/config.ts`): Environment loading with AGENT_KEY separation enforcement
+- **T3N Client** (`src/t3n/client.ts`): Authentication and TenantClient creation with baseUrl
+- **T3N Tenant** (`src/t3n/tenant.ts`): Canonical contract registration and execution
+- **Payroll Types** (`src/payroll/types.ts`): Runtime types + on-disk DTOs with decimal string serialization
+- **Offline Payroll** (`src/payroll/offline.ts`): Local computation with cycle/period/cap enforcement
+- **Live Payroll** (`src/payroll/live.ts`): TEE execution via tenant.contracts.execute()
 
-### TEE Contract (`contracts/payroll/`)
+### Rust/WASM Layer
 
-| File | Purpose |
-|------|---------|
-| `src/lib.rs` | Guest implementation, function dispatch |
-| `src/payroll.rs` | Payroll computation (checked arithmetic) |
-| `src/audit.rs` | Audit record management |
-| `wit/world.wit` | WIT interface definition |
+- **Contract** (`contracts/payroll/src/lib.rs`): WIT component with 6 exported functions
+- **Payroll Logic** (`contracts/payroll/src/payroll.rs`): Core computation with checked arithmetic
+- **Audit** (`contracts/payroll/src/audit.rs`): Audit record management (MVP stubs)
 
-### SDK Integration (`src/t3n/`)
+## Data Flow
 
-| File | Purpose |
-|------|---------|
-| `client.ts` | T3N connection + authentication |
-| `tenant.ts` | Contract registration + execution |
+### Offline Mode
+```
+CLI → loadEmployees() → computeOfflinePayroll() → saveBatch() → printSummary()
+```
 
-## Security Model
+### Live Mode
+```
+CLI → connectToT3n() → executePayrollFunction() → tenant.contracts.execute()
+  → WASM compute_payroll() → response parsed → saveBatch() → printSummary()
+```
 
-- **Monetary values**: u64 cents internally, decimal strings on wire
-- **Tax rates**: u16 basis points (0–10000)
-- **Checked arithmetic**: overflow returns explicit errors
-- **No PII in contract output**: employee_id is opaque, no wallet/bank details
-- **Private KV maps**: employee records and audit entries stored in tenant-scoped maps
-- **ACL scoping**: maps scoped to contract_id
+## Storage Format
 
-## Offline vs Live
+Employees are stored as JSON with `baseSalaryCents` as a decimal string:
+```json
+[{
+  "id": "EMP-001",
+  "name": "Alice",
+  "walletAddress": "0x...",
+  "baseSalaryCents": "500000",
+  "department": "Engineering",
+  "taxBasisPoints": 2000
+}]
+```
 
-| Mode | Flag | Status | Banner |
-|------|------|--------|--------|
-| Offline | `--offline` | `"calculated"` | UNSAFE LOCAL DEMO |
-| Live TEE | (none) | `"validated"` | N/A |
+Batches are stored similarly with all bigint fields as strings.
 
-## Contract Functions
+## Security Boundaries
 
-| Function | Status | Description |
-|----------|--------|-------------|
-| `compute-payroll` | ✅ Implemented | Core payroll computation |
-| `finalize-audit` | ✅ Implemented | Audit record finalization |
-| `validate-credentials` | ✅ Implemented | Credential validation (MVP) |
-| `list-audit-cycles` | ✅ Implemented | Audit history listing |
-| `get-audit-entry` | ✅ Implemented | Audit entry retrieval |
-| `execute-disbursement` | ❌ NOT IMPLEMENTED | Returns explicit error |
-
-## Known Limitations
-
-1. Employee records passed in input (MVP), not read from KV map
-2. Audit records not written to KV map (structure in place, not wired)
-3. Disbursement not implemented
-4. Agent delegation not yet configured (Phase 4)
+- **WASM contract**: Validates all inputs (cycle ID, dates, employee count, salaries, tax rates)
+- **TypeScript CLI**: Validates inputs before passing to storage or contract
+- **Atomic writes**: temp file + rename prevents corruption
+- **Key separation**: T3N_API_KEY (tenant) vs AGENT_KEY (agent) enforced at config load

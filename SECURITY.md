@@ -1,25 +1,31 @@
-# Security Policy
+# Security
 
-## Reporting
+## Threat Model
 
-If you discover a security vulnerability, please report it responsibly:
+The payroll agent operates in a semi-trusted model:
 
-- **Email**: [contact via GitHub](https://github.com/daffhaidar/t3n-payroll-agent/issues)
-- **DO NOT** open public issues for security vulnerabilities
-- **DO NOT** include credentials, API keys, or private keys in reports
+1. **TEE Integrity**: The T3N TEE ensures computation integrity — salary calculations cannot be tampered with during execution
+2. **Agent Trust**: The calling agent provides input (employee records, cycle parameters) and receives output. In the MVP, the agent can see salary data
+3. **Data at Rest**: Local storage uses JSON files with no encryption (offline mode only)
 
-## Scope
+## Key Management
 
-This project is a demonstration/payroll agent for the Terminal 3 Agent Build Challenge. Security concerns should be directed to:
+- `T3N_API_KEY`: Tenant authentication key. Compromised key treated as revoked
+- `AGENT_KEY`: Agent authentication key. Must be separate from T3N_API_KEY
+- Keys are loaded from environment variables, never hardcoded
+- The CLI never prints or logs keys
 
-1. **T3N SDK issues**: Report to Terminal 3 DevRel (https://t.me/terminal3developer)
-2. **Contract vulnerabilities**: This is a demo contract, not production payroll software
-3. **API key exposure**: Rotate immediately if exposed
+## Validation Layers
 
-## Best Practices
+| Layer | Validates |
+|-------|-----------|
+| TypeScript CLI | Wallet format, employee ID format, salary > 0, tax rate 0-10000, date format, batch cap > 0 |
+| Rust WASM contract | Same + employee count <= 1000, no duplicate IDs, end date > start date, checked arithmetic overflow |
 
-- Never commit `.env` files or API keys
-- Use environment variables for all secrets
-- Rotate API keys regularly
-- Do not share private keys or mnemonics
-- Use read-only API keys where possible
+## Known Limitations (MVP)
+
+- Employee records visible to calling agent (production: read from private KV map)
+- No encryption at rest for local storage
+- No rate limiting on CLI operations
+- No audit trail persistence (finalize-audit is a stub)
+- No disbursement implementation

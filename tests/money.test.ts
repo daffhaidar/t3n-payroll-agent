@@ -1,5 +1,8 @@
-import { describe, it } from "node:test";
+import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
 import {
   parseDollarsToCents,
   parseCentsString,
@@ -8,6 +11,7 @@ import {
   calculateNet,
   formatDollars,
   centsToWireString,
+  centsFromString,
   ZERO_CENTS,
 } from "../src/money.js";
 
@@ -73,6 +77,32 @@ describe("parseDollarsToCents", () => {
   });
 });
 
+describe("centsFromString", () => {
+  it("parses valid cents string", () => {
+    assert.equal(centsFromString("500000"), 500000n);
+  });
+
+  it("parses zero", () => {
+    assert.equal(centsFromString("0"), 0n);
+  });
+
+  it("rejects empty string", () => {
+    assert.throws(() => centsFromString(""), /Empty cents value/);
+  });
+
+  it("rejects negative", () => {
+    assert.throws(() => centsFromString("-100"), /must be non-negative integer/);
+  });
+
+  it("rejects decimal", () => {
+    assert.throws(() => centsFromString("100.50"), /must be non-negative integer/);
+  });
+
+  it("rejects non-numeric", () => {
+    assert.throws(() => centsFromString("abc"), /must be non-negative integer/);
+  });
+});
+
 describe("parseBasisPoints", () => {
   it("parses 0 basis points (0%)", () => {
     assert.equal(parseBasisPoints("0"), 0);
@@ -105,9 +135,8 @@ describe("parseBasisPoints", () => {
 
 describe("calculateTax", () => {
   it("calculates 20% tax on $5000", () => {
-    // $5000 = 500000 cents, 20% = 2000 bp
     const tax = calculateTax(500000n, 2000);
-    assert.equal(tax, 100000n); // $1000
+    assert.equal(tax, 100000n);
   });
 
   it("calculates 0% tax", () => {

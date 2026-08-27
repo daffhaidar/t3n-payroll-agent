@@ -130,3 +130,16 @@ export function formatDollars(cents: Cents): string {
 export function centsToWireString(cents: Cents): string {
   return cents.toString();
 }
+
+/**
+ * Parse a validated decimal string back to bigint cents.
+ * Rejects non-numeric, negative, or empty values.
+ */
+export function centsFromString(input: string): Cents {
+  const trimmed = input.trim();
+  if (trimmed.length === 0) throw new Error("Empty cents value");
+  if (!/^\d+$/.test(trimmed)) {
+    throw new Error(`Invalid cents string "${trimmed}": must be non-negative integer`);
+  }
+  return BigInt(trimmed);
+}

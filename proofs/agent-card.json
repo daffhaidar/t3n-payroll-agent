@@ -5,7 +5,7 @@
   "services": [
     {
       "name": "DID",
-      "endpoint": "did:t3n:f5edef51b04ce7cfa92262bb0f0c801c957fb25c",
+      "endpoint": "did:t3n:3463e0003357b49c8cbd338d9fc39f96466123af",
       "version": "v1"
     }
   ],

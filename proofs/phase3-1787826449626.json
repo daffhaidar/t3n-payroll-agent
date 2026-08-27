@@ -1,0 +1,42 @@
+{
+  "cluster": "testnet",
+  "tenant_did": "did:t3n:aba7511767bc3129a5184c8795c363f976d1fdae",
+  "canonical_name": "z:aba7511767bc3129a5184c8795c363f976d1fdae:payroll",
+  "contract_id": 757,
+  "contract_version": "0.1.0",
+  "invoked_function": "compute-payroll",
+  "success": true,
+  "result": {
+    "cycle_id": "cycle-1787826449229",
+    "employee_results": [
+      {
+        "employee_id": "EMP-001",
+        "gross_pay_cents": "500000",
+        "tax_withheld_cents": "100000",
+        "net_pay_cents": "400000",
+        "status": "validated"
+      },
+      {
+        "employee_id": "EMP-002",
+        "gross_pay_cents": "420000",
+        "tax_withheld_cents": "75600",
+        "net_pay_cents": "344400",
+        "status": "validated"
+      },
+      {
+        "employee_id": "EMP-003",
+        "gross_pay_cents": "650000",
+        "tax_withheld_cents": "143000",
+        "net_pay_cents": "507000",
+        "status": "validated"
+      }
+    ],
+    "batch_totals": {
+      "total_gross_cents": "1570000",
+      "total_tax_cents": "318600",
+      "total_net_cents": "1251400"
+    }
+  },
+  "timestamp": "2026-08-27T10:27:29.626Z",
+  "node_url": "https://cn-api.sg.testnet.t3n.terminal3.io"
+}

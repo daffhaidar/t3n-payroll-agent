@@ -1,5 +1,7 @@
 /**
  * Tenant contract management — register, publish, and execute payroll contracts.
+ * This is the SINGLE canonical implementation for contract operations.
+ * Do not duplicate in live.ts or elsewhere.
  */
 
 import { readFile } from "node:fs/promises";
