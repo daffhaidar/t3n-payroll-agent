@@ -2,61 +2,49 @@
 
 Enterprise payroll system running inside Terminal 3's Trusted Execution Environment (TEE). Executes salary calculations, tax withholding, and batch processing via real T3N contract invocations.
 
+## What This Is
+
+A **real TEE payroll agent** that:
+1. Authenticates to T3N testnet via WASM crypto
+2. Registers a Rust/WASM payroll contract inside the TEE
+3. Invokes `compute-payroll` inside the confidential enclave
+4. Returns validated results — status `"validated"`, not `"processed"`
+
+## What This Is NOT
+
+- This is **not** production payroll software
+- Disbursement is **not implemented** (returns explicit error)
+- Employee records are passed in input (MVP), not read from KV map
+- This is a **demo** for the T3N Agent Build Challenge
+
 ## Features
 
-- **TEE-protected computation** — payroll logic runs inside Terminal 3's confidential enclave via `compute-payroll` contract function
-- **Employee management** — add, list, remove employees with persistent storage
-- **Batch processing** — process payroll for all employees via TEE or offline demo
-- **Tax withholding** — automatic calculation using exact bigint arithmetic (no floating point)
-- **Audit trail** — batch history saved locally for compliance
-- **Contract registration** — register and manage TEE payroll contracts
-
-## Prerequisites
-
-- Node.js >= 22.12.0
-- Terminal 3 API key ([claim here](https://docs.terminal3.io/developers/adk/get-started/prerequisites/request-test-tokens))
-- Rust toolchain with `wasm32-wasip2` target (for contract build)
-
-## Setup
-
-```bash
-git clone https://github.com/daffhaidar/t3n-payroll-agent.git
-cd t3n-payroll-agent
-npm install
-
-# Set your API key
-export T3N_API_KEY="your-key-here"
-```
+- **Real Rust/WASM contract** — 6 exported functions, checked arithmetic, no floating point
+- **TEE execution** — payroll computation runs inside the TEE enclave
+- **CLI interface** — 8 commands for employee management, payroll processing, contract registration
+- **Input validation** — TypeScript (first layer) + Rust (security boundary)
+- **Audit trail** — finalize-audit and get-audit-entry functions
+- **Honest documentation** — distinguishes offline demo vs live TEE execution
 
 ## Quick Start
 
 ```bash
-# Verify T3N connection
+git clone https://github.com/daffhaidar/t3n-payroll-agent.git
+cd t3n-payroll-agent
+npm ci
+
+# Set your API key
+export T3N_API_KEY="your-key-here"
+
+# Verify connection
 npx tsx src/cli.ts connect
 
-# Add employees
-npx tsx src/cli.ts add --id EMP-001 --name "Alice Chen" --wallet 0x... --salary 5000.00 --department Engineering --tax 2000
+# Register + invoke contract (Phase 3)
+npm run contract
 
-# List employees (salary redacted)
-npx tsx src/cli.ts list
-
-# Process payroll offline (UNSAFE LOCAL DEMO)
-npx tsx src/cli.ts process --offline --cycle cycle-001 --period-start 2026-08-01 --period-end 2026-08-31 --cap 5000000
-
-# Process payroll via TEE (requires registered contract)
-npx tsx src/cli.ts process --cycle cycle-001 --period-start 2026-08-01 --period-end 2026-08-31 --cap 5000000
-
-# Register payroll WASM contract
-npx tsx src/cli.ts register --wasm path/to/payroll.wasm
-
-# List registered contracts
-npx tsx src/cli.ts contracts
-
-# View batch history
-npx tsx src/cli.ts history
-
-# Show batch details
-npx tsx src/cli.ts show --batch batch-123456
+# Offline demo (UNSAFE LOCAL DEMO)
+npx tsx src/cli.ts add --id EMP-001 --name "Alice" --wallet 0x... --salary 5000.00 --department Engineering --tax 2000
+npx tsx src/cli.ts process --offline --cycle test-001 --period-start 2026-08-01 --period-end 2026-08-31 --cap 100000000000
 ```
 
 ## Architecture
@@ -102,13 +90,13 @@ npx tsx src/cli.ts show --batch batch-123456
 
 ### Contract Registration
 1. Build Rust contract: `cargo build --target wasm32-wasip2 --release`
-2. Register: `t3n-payroll register --wasm path/to/contract.wasm`
+2. Register: `npm run contract`
 3. Contract receives numeric `contract_id` for map ACLs
 
 ## Data Model
 
 ### Monetary Values
-- All monetary values stored as **cents** (bigint) internally
+- All monetary values stored as **cents** (bigint/u64) internally
 - JSON wire format: decimal string in cents (e.g. `"500000"` = $5,000.00)
 - Tax rates: integer basis points (0–10000), e.g. `2000` = 20%
 
@@ -126,51 +114,61 @@ npx tsx src/cli.ts show --batch batch-123456
 ### Payroll Status
 - `"calculated"` — offline local computation (UNSAFE DEMO)
 - `"validated"` — successful TEE payroll validation
-- `"disbursed"` — after real external disbursement succeeds
+- `"disbursed"` — after real external disbursement succeeds (NOT IMPLEMENTED)
 - `"failed"` — real failure
 
 ## Testing
 
 ```bash
-# Run all tests
+# TypeScript tests (58 tests)
 npm test
+
+# Rust tests (15 tests)
+cargo test --manifest-path contracts/payroll/Cargo.toml
 
 # Typecheck
 npm run typecheck
+
+# Clippy
+cargo clippy --manifest-path contracts/payroll/Cargo.toml --all-targets -- -D warnings
 ```
 
-58 tests covering:
-- Money parsing (negative, NaN, scientific notation, >2 decimal places)
-- Validation (wallet addresses, employee IDs, cycle IDs, pay periods)
-- Offline payroll computation
-- Basis points / tax calculation
+## Contract Functions
+
+| Function | Status | Description |
+|----------|--------|-------------|
+| `compute-payroll` | ✅ Implemented | Core payroll computation |
+| `finalize-audit` | ✅ Implemented | Audit record finalization |
+| `validate-credentials` | ✅ Implemented | Credential validation (MVP) |
+| `list-audit-cycles` | ✅ Implemented | Audit history listing |
+| `get-audit-entry` | ✅ Implemented | Audit entry retrieval |
+| `execute-disbursement` | ❌ NOT IMPLEMENTED | Returns explicit error |
 
 ## File Structure
 
 ```
 t3n-payroll-agent/
-├── src/
+├── src/                    # TypeScript source
 │   ├── cli.ts              # CLI entry point
 │   ├── config.ts           # Environment config
 │   ├── money.ts            # Exact bigint arithmetic
 │   ├── validation.ts       # Input validation
-│   ├── payroll/
-│   │   ├── types.ts        # Payroll types
-│   │   ├── offline.ts      # Offline computation (UNSAFE DEMO)
-│   │   └── live.ts         # TEE execution
-│   ├── storage/
-│   │   └── offline.ts      # Local JSON persistence
-│   └── t3n/
-│       ├── client.ts       # T3N connection + auth
-│       └── tenant.ts       # Contract registration/execution
-├── tests/
-│   ├── money.test.ts
-│   ├── validation.test.ts
-│   └── offline-payroll.test.ts
-├── .env                    # API key (gitignored)
-├── tsconfig.json
-├── package.json
-└── README.md
+│   ├── payroll/            # Payroll logic
+│   ├── storage/            # Local persistence
+│   └── t3n/                # SDK integration
+├── contracts/payroll/      # Rust/WASM TEE contract
+│   ├── src/                # Rust source
+│   ├── wit/                # WIT interface definitions
+│   └── Cargo.toml
+├── tests/                  # TypeScript tests
+├── scripts/                # Deployment scripts
+├── proofs/                 # Execution proofs
+├── screenshots/            # Verification screenshots
+├── BUGS.md                 # Known bugs
+├── SECURITY.md             # Security policy
+├── ARCHITECTURE.md         # Architecture docs
+├── HANDOVER.md             # Handover guide
+└── SUBMISSION.md           # Challenge submission
 ```
 
 ## License

@@ -8,7 +8,8 @@
     "test": "node --import tsx --test tests/*.test.ts",
     "build": "tsc --noEmit",
     "payroll": "tsx src/cli.ts",
-    "start": "tsx src/cli.ts"
+    "start": "tsx src/cli.ts",
+    "contract": "tsx scripts/register-and-invoke.ts"
   },
   "engines": {
     "node": ">=22.12.0"
