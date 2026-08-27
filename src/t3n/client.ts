@@ -12,7 +12,6 @@ import {
   createEthAuthInput,
   fetchTrustedManifest,
   getEnvironment,
-  getContractVersion,
   getNodeUrl,
 } from "@terminal3/t3n-sdk";
 import type { TenantSdkEnvironment } from "@terminal3/t3n-sdk";
@@ -26,6 +25,8 @@ export interface T3nConnection {
 
 /**
  * Connect to T3N testnet, authenticate, and return a TenantClient.
+ * TenantClient.baseUrl is set to getNodeUrl() — required for contract
+ * and map operations per SDK v5.2.0 declarations.
  */
 export async function connectToT3n(
   apiKey: string,
@@ -50,10 +51,13 @@ export async function connectToT3n(
   const did = await t3n.authenticate(createEthAuthInput(address));
   const tenantDid = did.value;
 
+  const nodeUrl = getNodeUrl();
+
   const tenant = new TenantClient({
     environment,
     t3n,
     tenantDid,
+    baseUrl: nodeUrl,
   });
 
   return { t3n, tenant, tenantDid, address };
