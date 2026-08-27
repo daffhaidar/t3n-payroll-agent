@@ -1,0 +1,24 @@
+{
+  "cluster": "testnet",
+  "tenant_did": "did:t3n:aba7511767bc3129a5184c8795c363f976d1fdae",
+  "agent_did": "did:t3n:3463e0003357b49c8cbd338d9fc39f96466123af",
+  "separate_identities": true,
+  "canonical_name": "z:aba7511767bc3129a5184c8795c363f976d1fdae:payroll",
+  "contract_version": "0.1.0",
+  "grant_created": true,
+  "tests": {
+    "authorized_compute_payroll": {
+      "status": "PASS",
+      "description": "compute-payroll with agent credentials",
+      "result": "{\"cycle_id\":\"test-cycle-1787826743517\",\"employee_results\":[{\"employee_id\":\"TEST-001\",\"gross_pay_cents\":\"500000\",\"tax_withheld_cents\":\"100000\",\"net_pay_cents\":\"400000\",\"status\":\"validated\"}],\"batch_totals\":{\"total_gross_cents\":\"500000\",\"total_tax_cents\":\"100000\",\"total_net_cents\":\"400000\"}}"
+    },
+    "unauthorized_execute_disbursement": {
+      "status": "PASS",
+      "description": "execute-disbursement returns NOT IMPLEMENTED (business logic, not auth)",
+      "result": {
+        "error": "RpcError: RPC Error: contract error: execute-disbursement: NOT IMPLEMENTED. Disbursement requires a real sandbox payment endpoint through an authorized T3N outbound host. Do not simulate as successful. [3854c141-d6d2-4d18-8df2-9a5b212b402c]"
+      }
+    }
+  },
+  "timestamp": "2026-08-27T10:32:23.756Z"
+}
