@@ -1,0 +1,18 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "T3N Payroll Agent",
+  "description": "Enterprise payroll computation agent running inside T3N TEE. Computes salary, tax withholding, and net pay via the compute-payroll contract function.",
+  "services": [
+    {
+      "name": "DID",
+      "endpoint": "did:t3n:f5edef51b04ce7cfa92262bb0f0c801c957fb25c",
+      "version": "v1"
+    }
+  ],
+  "x402Support": false,
+  "active": true,
+  "registrations": [],
+  "supportedTrust": [
+    "tee-attestation"
+  ]
+}

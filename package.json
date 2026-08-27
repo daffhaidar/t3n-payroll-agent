@@ -9,7 +9,8 @@
     "build": "tsc --noEmit",
     "payroll": "tsx src/cli.ts",
     "start": "tsx src/cli.ts",
-    "contract": "tsx scripts/register-and-invoke.ts"
+    "contract": "tsx scripts/register-and-invoke.ts",
+    "agent": "tsx scripts/phase4-agent.ts"
   },
   "engines": {
     "node": ">=22.12.0"

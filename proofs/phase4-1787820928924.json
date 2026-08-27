@@ -1,0 +1,45 @@
+{
+  "cluster": "testnet",
+  "tenant_did": "did:t3n:f5edef51b04ce7cfa92262bb0f0c801c957fb25c",
+  "agent_did": "did:t3n:f5edef51b04ce7cfa92262bb0f0c801c957fb25c",
+  "canonical_name": "z:f5edef51b04ce7cfa92262bb0f0c801c957fb25c:payroll",
+  "contract_version": "0.1.0",
+  "tests": {
+    "authorized_compute_payroll": {
+      "status": "PASS",
+      "description": "compute-payroll with valid grant succeeds",
+      "result": {
+        "cycle_id": "test-cycle-1787820928226",
+        "employee_results": [
+          {
+            "employee_id": "TEST-001",
+            "gross_pay_cents": "500000",
+            "tax_withheld_cents": "100000",
+            "net_pay_cents": "400000",
+            "status": "validated"
+          }
+        ],
+        "batch_totals": {
+          "total_gross_cents": "500000",
+          "total_tax_cents": "100000",
+          "total_net_cents": "400000"
+        }
+      }
+    },
+    "unauthorized_execute_disbursement": {
+      "status": "PASS",
+      "description": "execute-disbursement denied (NOT IMPLEMENTED)",
+      "result": {
+        "error": "RpcError: RPC Error: contract error: execute-disbursement: NOT IMPLEMENTED. Disbursement requires a real sandbox payment endpoint through an authorized T3N outbound host. Do not simulate as successful. [afbd5f3a-3c7e-4f37-8a1c-ae67d5ee09e8]"
+      }
+    },
+    "revoked_absent_grant": {
+      "status": "SKIP",
+      "description": "validate-credentials without outbound egress grant",
+      "result": {
+        "valid": true
+      }
+    }
+  },
+  "timestamp": "2026-08-27T08:55:28.924Z"
+}

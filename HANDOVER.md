@@ -66,6 +66,19 @@ This will:
 npm run contract  # Second run should show existing contract
 ```
 
+### 4. Register agent (Phase 4)
+
+```bash
+npm run agent
+```
+
+This will:
+- Register agent identity on T3N
+- Create and host agent card
+- Create delegation grant
+- Run access control tests
+- Record evidence
+
 ## Contract Versioning
 
 - Contract tail: `payroll` (stable)
