@@ -43,6 +43,7 @@ const WASM_PATH = path.resolve(
 const CONTRACT_TAIL = "payroll";
 const CONTRACT_VERSION = "0.1.0";
 const PROOF_DIR = path.resolve(process.cwd(), "proofs");
+const MAX_BATCH_CAP_CENTS = 1_000_000_000; // $10,000,000 in cents
 
 // ── Validation ──────────────────────────────────────────────────────
 if (!T3N_API_KEY) {
@@ -121,21 +122,26 @@ async function main() {
     const error = err as Error & { request_id?: string };
     const msg = error.message;
 
-    // If version already registered, look up existing contract
+    // If version already registered, report and exit — do NOT fabricate contract_id:0
     if (msg.includes("not higher than current version")) {
-      console.log(`  Contract already registered (version ${CONTRACT_VERSION})`);
-      console.log(`  Looking up existing contract...`);
+      console.error(`  BLOCKED: Contract version ${CONTRACT_VERSION} already registered.`);
+      console.error(`  To deploy a new version, bump CONTRACT_VERSION in:`);
+      console.error(`    - scripts/register-and-invoke.ts`);
+      console.error(`    - src/t3n/tenant.ts`);
+      console.error(`    - src/payroll/live.ts`);
+      console.error(`    - contracts/payroll/Cargo.toml`);
+      console.error(`    - contracts/payroll/wit/world.wit`);
 
-      const scriptName = `z:${tenantDid.replace("did:t3n:", "")}:${CONTRACT_TAIL}`;
-      registerResult = { name: scriptName, contract_id: 0 };
-
-      // List contracts to find the contract_id
-      try {
-        const contracts = await tenant.contracts.list();
-        console.log(`  Registered contracts: ${contracts.join(", ")}`);
-      } catch {
-        console.log("  Could not list contracts");
-      }
+      await recordBlocker({
+        phase: "register",
+        error: `Version ${CONTRACT_VERSION} already registered. Bump version to deploy.`,
+        request_id: error.request_id,
+        sdk_version: "5.2.0",
+        node_version: process.version,
+        cluster: CLUSTER,
+        timestamp: new Date().toISOString(),
+      });
+      process.exit(1);
     } else {
       console.error(`  REGISTRATION FAILED: ${msg}`);
       if (error.request_id) console.error(`  request_id: ${error.request_id}`);
@@ -238,7 +244,7 @@ async function main() {
     cycle_id: `cycle-${Date.now()}`,
     pay_period_start: "2026-08-01",
     pay_period_end: "2026-08-31",
-    batch_cap_cents: 100000000000,
+    batch_cap_cents: MAX_BATCH_CAP_CENTS,
     employees: demoEmployees,
   };
 
