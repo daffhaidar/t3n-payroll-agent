@@ -1,51 +1,23 @@
-# Known Bugs and Blockers
+# Known Bugs and Limitations
 
-## BUG-001: Contract Registration — SDK 5.2.0
+## Fixed in This Branch
 
-| Field | Value |
-|-------|-------|
-| **Date** | 2026-08-27 |
-| **SDK Version** | @terminal3/t3n-sdk 5.2.0 |
-| **Node Version** | v22.22.3 |
-| **npm Version** | 10.9.8 |
-| **Cluster** | testnet |
-| **Status** | RESOLVED |
+1. **BigInt serialization crash**: `JSON.stringify` cannot serialize BigInt. Fixed by storing as decimal strings in EmployeeDTO
+2. **CLI --offline requiredOption**: Made `--offline` optional boolean so live mode is reachable
+3. **Offline path ignores arguments**: Now uses cycle ID, pay period, and batch cap
+4. **TenantClient missing baseUrl**: Added `getNodeUrl()` to TenantClient config
+5. **Duplicate execution paths**: Consolidated to single canonical path in tenant.ts
+6. **contract_id:0 fabrication**: Removed sentinel fallback on version-exists error
+7. **MAX_BATCH_CAP_CENTS wrong**: Corrected from 100B ($1B) to 1B ($10M)
+8. **execSync with interpolated secrets**: Replaced with execFileSync + env object
 
-### Resolution
-Registration **works** with SDK 5.2.0. The key fix was adding `baseUrl: nodeUrl` to the `TenantClient` config. Without it, the error was:
-```
-TenantClient.contracts.register requires config field(s): baseUrl
-```
+## Remaining MVP Limitations
 
-### Initial Error (Fixed)
-First attempt failed because `TenantClient` was created without `baseUrl`. After adding `baseUrl: nodeUrl`, registration succeeded:
-```
-name:        z:f5edef51b04ce7cfa92262bb0f0c801c957fb25c:payroll
-contract_id: 754
-```
-
-### Subsequent Runs
-Re-registration of the same version fails with expected error:
-```
-contract version invalid: version 0.1.0 is not higher than current version 0.1.0
-```
-This is correct behavior — version must be bumped for re-registration.
-
----
-
-## BUG-002: wasm-tools Install Timeout
-
-| Field | Value |
-|-------|-------|
-| **Date** | 2026-08-27 |
-| **Tool** | wasm-tools (cargo install) |
-| **Status** | KNOWN LIMITATION |
-
-### Description
-`cargo install wasm-tools` times out after 300 seconds on t3.small instance.
-
-### Impact
-LOW — WASM builds and tests pass without it.
-
-### Workaround
-Skip `wasm-tools component wit` verification.
+| Issue | Severity | Status |
+|-------|----------|--------|
+| Employee records visible to agent | Medium | MVP design (production: KV map) |
+| finalize-audit does not persist | Low | MVP stub |
+| validate-credentials returns true for non-empty ID | Low | MVP stub |
+| list-audit-cycles returns empty array | Low | MVP stub |
+| No disbursement implementation | High | Explicit NOT IMPLEMENTED error |
+| No encryption at rest | Low | Offline mode only |
